@@ -12,6 +12,20 @@ export const weatherTool = createTool({
   },
 });
 
+export const notesTool = createTool({
+  description: 'Create a note with AI-generated content',
+  parameters: z.object({
+    content: z.string().describe('The AI-generated content to display in the note'),
+  }),
+  execute: async function ({ content }) {
+    return { 
+      content,
+      isStreaming: false // We'll handle streaming at the component level
+    };
+  },
+});
+
 export const tools = {
   displayWeather: weatherTool,
+  createNote: notesTool,
 };
