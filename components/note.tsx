@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-type NotesProps = {
+type NoteProps = {
   content: string;
   isStreaming?: boolean;
 };
 
-export const Notes = ({ content, isStreaming = false }: NotesProps) => {
+export const Note = ({ content, isStreaming = false }: NoteProps) => {
   return (
-    <div className="prose prose-sm max-w-none dark:prose-invert">
+    <div className="max-w-[240px] text-stone-900">
       <ReactMarkdown>{content}</ReactMarkdown>
       {isStreaming && <span className="animate-pulse">▋</span>}
     </div>

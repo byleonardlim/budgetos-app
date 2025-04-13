@@ -52,7 +52,7 @@ export default function Page() {
               } else if (toolName === 'createNote') {
                 newComponent = {
                   id: toolCallId,
-                  type: 'notes',
+                  type: 'note',
                   position: { 
                     x: Math.random() * 300, 
                     y: Math.random() * 200 

@@ -1,5 +1,5 @@
 import { Weather } from './weather';
-import { Notes } from './notes';
+import { Note } from './note';
 import { ComponentType } from 'react';
 
 // Define the type for our component registry
@@ -10,7 +10,7 @@ type ComponentRegistry = {
 // Create the registry
 export const componentRegistry: ComponentRegistry = {
   weather: Weather,
-  notes: Notes,
+  note: Note,
   // Add more components here as they are created
   // stock: Stock,
   // note: Note,
