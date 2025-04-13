@@ -20,6 +20,7 @@ type DraggableComponent = {
 export default function Page() {
   const { messages, input, handleInputChange, handleSubmit, setMessages } = useChat();
   const [draggableComponents, setDraggableComponents] = useState<DraggableComponent[]>([]);
+  const [deletedCardIds, setDeletedCardIds] = useState<Set<string>>(new Set());
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -27,49 +28,56 @@ export default function Page() {
 
   // Process messages and tool invocations to create draggable components
   useEffect(() => {
-    messages.forEach(message => {
-      if (message.toolInvocations) {
-        message.toolInvocations.forEach(toolInvocation => {
-          const { toolName, toolCallId, state } = toolInvocation;
+    console.log('Current component IDs:', draggableComponents.map(c => c.id));
+    console.log('Deleted IDs:', Array.from(deletedCardIds));
+    // Create a Set of existing component IDs for faster lookup
+    const existingIds = new Set(draggableComponents.map(c => c.id));
+      
+    // Find all tool invocations that should become components
+    const componentsToAdd = messages.flatMap(message => 
+      (message.toolInvocations || [])
+        .filter(invocation => 
+          invocation.state === 'result' && 
+          !deletedCardIds.has(invocation.toolCallId) &&
+          !existingIds.has(invocation.toolCallId)
+        )
+        .map(invocation => {
+          const { toolName, toolCallId, result } = invocation;
           
-          if (state === 'result') {
-            // Check if this component already exists
-            const exists = draggableComponents.some(comp => comp.id === toolCallId);
-            
-            if (!exists) {
-              let newComponent;
-              
-              if (toolName === 'displayWeather') {
-                newComponent = {
-                  id: toolCallId,
-                  type: 'weather',
-                  position: { 
-                    x: Math.random() * 300, 
-                    y: Math.random() * 200 
-                  },
-                  data: toolInvocation.result
-                };
-              } else if (toolName === 'createNote') {
-                newComponent = {
-                  id: toolCallId,
-                  type: 'note',
-                  position: { 
-                    x: Math.random() * 300, 
-                    y: Math.random() * 200 
-                  },
-                  data: toolInvocation.result
-                };
-              }
-              
-              if (newComponent) {
-                setDraggableComponents(prev => [...prev, newComponent]);
-              }
-            }
+          if (toolName === 'displayWeather') {
+            return {
+              id: toolCallId,
+              type: 'weather',
+              position: { 
+                x: Math.random() * 300, 
+                y: Math.random() * 200 
+              },
+              data: result
+            };
+          } else if (toolName === 'createNote') {
+            return {
+              id: toolCallId,
+              type: 'note',
+              position: { 
+                x: Math.random() * 300, 
+                y: Math.random() * 200 
+              },
+              data: result
+            };
           }
-        });
-      }
-    });
-  }, [messages]);
+          return null;
+        })
+        .filter(Boolean) // Remove null values
+    );
+  
+    if (componentsToAdd.length > 0) {
+      setDraggableComponents(prev => {
+        const newIds = new Set(componentsToAdd.map(c => c.id));
+        const filteredPrev = prev.filter(c => !newIds.has(c.id));
+        return [...filteredPrev, ...componentsToAdd];
+      });
+    }
+  }, [messages, deletedCardIds]); // Keep these dependencies
 
   // Card click handler
   const handleCardClick = (e: React.MouseEvent, id: string) => {
@@ -84,28 +92,13 @@ export default function Page() {
 
   // Delete card handler
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    setDeletedCardIds(prev => new Set(prev).add(id));
     e.preventDefault();
     e.stopPropagation();
     
     // Remove the card from the workspace UI
     setDraggableComponents(prev => prev.filter(comp => comp.id !== id));
-    
-    // Remove the associated message and tool invocation from the chat history
-    setMessages(prevMessages => {
-      return prevMessages.filter(message => {
-        // If this message has tool invocations, check if it's the one we're deleting
-        if (message.toolInvocations) {
-          const hasMatchingInvocation = message.toolInvocations.some(
-            invocation => invocation.toolCallId === id
-          );
-          // Keep the message only if it doesn't have the matching invocation
-          return !hasMatchingInvocation;
-        }
-        // Keep all other messages
-        return true;
-      });
-    });
-    
+       
     setSelectedId(null);
   };
 
@@ -137,7 +130,7 @@ export default function Page() {
       />
       
       {/* Chat input with popover messages */}
-      <div className="border-t p-4 bg-white">
+      <div className="m-4 border max-w-screen z-50 absolute inset-x-0 bottom-0 p-4 bg-white/70 backdrop-blur-sm rounded-md">
         <form 
           onSubmit={(e) => {
             handleSubmit(e);
@@ -150,7 +143,7 @@ export default function Page() {
               value={input}
               onChange={handleInputChange}
               placeholder="Type a message..."
-              className="w-full pr-10"
+              className="w-full pr-10 bg-white/90"
             />
             
             <Popover open={messagesOpen} onOpenChange={setMessagesOpen}>
@@ -169,10 +162,13 @@ export default function Page() {
                 <ScrollArea className="h-80">
                   {messages.map(message => (
                     <div key={message.id} className="mb-4">
-                      <div className={`font-medium ${message.role === 'user' ? 'text-blue-600' : 'text-gray-900'}`}>
+                      <div className={`text-xs font-bold uppercase ${message.role === 'user' ? 'text-green-600' : 'text-slate-900'}`}>
                         {message.role === 'user' ? 'You' : 'AI'}
-                      </div>
-                      <div className="text-sm mt-1">{message.content}</div>
+                        </div>
+                        <div className="text-sm mt-1">{message.content}</div>
+                        {message.toolInvocations?.some(inv => deletedCardIds.has(inv.toolCallId)) && (
+                          <div className="text-xs text-gray-500">(Card removed)</div>
+                        )}
                     </div>
                   ))}
                 </ScrollArea>

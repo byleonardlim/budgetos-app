@@ -33,7 +33,6 @@ export function Workspace({
   onCardClick,
   onDeleteClick,
   onMouseEnter,
-  onMouseLeave,
   onPositionChange
 }: WorkspaceProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -44,6 +43,7 @@ export function Workspace({
     setIsDragging(true);
     setDraggingId(id);
     setStartPosition({ x: e.clientX, y: e.clientY });
+    onCardClick(e, id); // Add this line to select the card when drag starts
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -84,7 +84,7 @@ export function Workspace({
   return (
     <div
       ref={workspaceRef}
-      className="flex-1 relative bg-gray-50 overflow-hidden"
+      className="flex-1 relative bg-gray-100 overflow-hidden"
       onClick={handleWorkspaceClick}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -97,6 +97,7 @@ export function Workspace({
           selectedId={selectedId}
           hoveredId={hoveredId}
           isDragging={isDragging && draggingId === component.id}
+          draggingId={draggingId}
           onSelect={(id) => onCardClick(new MouseEvent('click'), id)}
           onDelete={(id) => onDeleteClick(new MouseEvent('click'), id)}
           onHover={onMouseEnter}

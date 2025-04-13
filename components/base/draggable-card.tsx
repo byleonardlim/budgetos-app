@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
-import { Weather } from '@/components/weather';
+import { getComponentByType } from '@/components/registry';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,10 +13,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
-import { getComponentByType } from '@/components/registry';
-
 import { useState } from 'react';
 
 type DraggableComponent = {
@@ -31,6 +28,7 @@ interface DraggableCardProps {
   selectedId: string | null;
   hoveredId: string | null;
   isDragging: boolean;
+  draggingId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onHover: (id: string | null) => void;
@@ -42,6 +40,7 @@ export function DraggableCard({
   selectedId,
   hoveredId,
   isDragging,
+  draggingId,
   onSelect,
   onDelete,
   onHover,
@@ -79,13 +78,13 @@ export function DraggableCard({
         data-card="true"
         className={`absolute shadow-md transition-all
           ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
-          ${selectedId === component.id 
-            ? 'border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-lg' 
+          ${selectedId === component.id || (isDragging && draggingId === component.id) 
+            ? 'border-2 border-green-500 ring-2 ring-green-500/20 shadow-lg' 
             : 'border border-gray-200'}`}
         style={{
           left: `${component.position.x}px`,
           top: `${component.position.y}px`,
-          zIndex: selectedId === component.id ? 10 : 1
+          zIndex: (selectedId === component.id || draggingId === component.id) ? 10 : 1
         }}
         onClick={handleClick}
         onMouseDown={handleMouseDown}
