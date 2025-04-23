@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   // Call the language model
   const result = streamText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-3.5-turbo'),
     messages,
     maxSteps: 5,
     tools,
