@@ -19,7 +19,7 @@ interface WorkspaceProps {
   onWorkspaceClick: () => void;
   onCardClick: (e: React.MouseEvent, id: string) => void;
   onDeleteClick: (e: React.MouseEvent, id: string) => void;
-  onMouseEnter: (id: string) => void;
+  onMouseEnter: (id: string | null) => void;
   onMouseLeave: () => void;
   onPositionChange: (id: string, position: { x: number; y: number }) => void;
 }
@@ -98,8 +98,30 @@ export function Workspace({
           hoveredId={hoveredId}
           isDragging={isDragging && draggingId === component.id}
           draggingId={draggingId}
-          onSelect={(id) => onCardClick(new MouseEvent('click'), id)}
-          onDelete={(id) => onDeleteClick(new MouseEvent('click'), id)}
+          onSelect={(id) => {
+            const mouseEvent = new MouseEvent('click');
+            const syntheticEvent = {
+              ...mouseEvent,
+              preventDefault: () => {},
+              stopPropagation: () => {},
+              nativeEvent: mouseEvent,
+              currentTarget: document.createElement('div'),
+              target: document.createElement('div'),
+            } as unknown as React.MouseEvent<Element, MouseEvent>;
+            onCardClick(syntheticEvent, id);
+          }}
+          onDelete={(id) => {
+            const mouseEvent = new MouseEvent('click');
+            const syntheticEvent = {
+              ...mouseEvent,
+              preventDefault: () => {},
+              stopPropagation: () => {},
+              nativeEvent: mouseEvent,
+              currentTarget: document.createElement('div'),
+              target: document.createElement('div'),
+            } as unknown as React.MouseEvent<Element, MouseEvent>;
+            onDeleteClick(syntheticEvent, id);
+          }}
           onHover={onMouseEnter}
           onDragStart={handleDragStart}
         />

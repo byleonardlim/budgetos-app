@@ -28,56 +28,37 @@ export default function Page() {
 
   // Process messages and tool invocations to create draggable components
   useEffect(() => {
-    console.log('Current component IDs:', draggableComponents.map(c => c.id));
-    console.log('Deleted IDs:', Array.from(deletedCardIds));
-    // Create a Set of existing component IDs for faster lookup
-    const existingIds = new Set(draggableComponents.map(c => c.id));
-      
-    // Find all tool invocations that should become components
-    const componentsToAdd = messages.flatMap(message => 
+    const allComponents = messages.flatMap(message =>
       (message.toolInvocations || [])
-        .filter(invocation => 
-          invocation.state === 'result' && 
-          !deletedCardIds.has(invocation.toolCallId) &&
-          !existingIds.has(invocation.toolCallId)
-        )
+        .filter(invocation => invocation.state === 'result' && !deletedCardIds.has(invocation.toolCallId))
         .map(invocation => {
           const { toolName, toolCallId, result } = invocation;
           
+          // Find existing component to preserve its position
+          const existingComponent = draggableComponents.find(c => c.id === toolCallId);
+
           if (toolName === 'displayWeather') {
             return {
               id: toolCallId,
               type: 'weather',
-              position: { 
-                x: Math.random() * 300, 
-                y: Math.random() * 200 
-              },
+              position: existingComponent?.position || { x: Math.random() * 300, y: Math.random() * 200 },
               data: result
             };
           } else if (toolName === 'createNote') {
             return {
               id: toolCallId,
               type: 'note',
-              position: { 
-                x: Math.random() * 300, 
-                y: Math.random() * 200 
-              },
+              position: existingComponent?.position || { x: Math.random() * 300, y: Math.random() * 200 },
               data: result
             };
           }
           return null;
         })
-        .filter(Boolean) // Remove null values
+        .filter(Boolean)
     );
-  
-    if (componentsToAdd.length > 0) {
-      setDraggableComponents(prev => {
-        const newIds = new Set(componentsToAdd.map(c => c.id));
-        const filteredPrev = prev.filter(c => !newIds.has(c.id));
-        return [...filteredPrev, ...componentsToAdd];
-      });
-    }
-  }, [messages, deletedCardIds]); // Keep these dependencies
+
+    setDraggableComponents(allComponents as DraggableComponent[]);
+  }, [messages, deletedCardIds]);
 
   // Card click handler
   const handleCardClick = (e: React.MouseEvent, id: string) => {
@@ -95,10 +76,6 @@ export default function Page() {
     setDeletedCardIds(prev => new Set(prev).add(id));
     e.preventDefault();
     e.stopPropagation();
-    
-    // Remove the card from the workspace UI
-    setDraggableComponents(prev => prev.filter(comp => comp.id !== id));
-       
     setSelectedId(null);
   };
 
